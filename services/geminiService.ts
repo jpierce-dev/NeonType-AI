@@ -10,16 +10,17 @@ const FALLBACK_TEXTS = {
 };
 
 export const fetchPracticeText = async (difficulty: Difficulty): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  
-  if (!apiKey) {
-    console.warn("No API Key found, using fallback text.");
+  // Use the injected process.env.API_KEY (from vite config define)
+  const apiKey = typeof process.env !== 'undefined' ? process.env.API_KEY : undefined;
+
+  if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+    console.warn("No API Key found or invalid, using fallback text.");
     return FALLBACK_TEXTS[difficulty];
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    
+
     let prompt = "";
     switch (difficulty) {
       case Difficulty.NOVICE:
@@ -47,7 +48,7 @@ export const fetchPracticeText = async (difficulty: Difficulty): Promise<string>
 
     const text = response.text?.trim();
     if (!text) throw new Error("Empty response from AI");
-    
+
     // Cleanup potential markdown code blocks if the model adds them
     return text.replace(/```/g, '').trim();
 
