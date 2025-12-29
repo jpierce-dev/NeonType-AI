@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DrillDifficulty, GameStatus } from '../types';
 import { VirtualKeyboard } from './VirtualKeyboard';
+import { playClickSound } from '../utils/sound';
 import { Zap, Target, Crosshair } from 'lucide-react';
 
 interface DrillAreaProps {
   difficulty: DrillDifficulty;
   status: GameStatus;
+  soundEnabled: boolean;
   onStart: () => void;
   onFinish: (score: number, accuracy: number) => void;
 }
@@ -17,7 +19,7 @@ const KEYS = {
   [DrillDifficulty.ALL]: "abcdefghijklmnopqrstuvwxyz0123456789[];',./"
 };
 
-export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, onStart, onFinish }) => {
+export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundEnabled, onStart, onFinish }) => {
   const [targetKey, setTargetKey] = useState<string>("");
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -60,6 +62,10 @@ export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, onStar
     const key = e.key;
     // Ignore modifier keys
     if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(key)) return;
+
+    if (soundEnabled) {
+      playClickSound();
+    }
 
     setPressedKey(key);
     

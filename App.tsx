@@ -4,13 +4,15 @@ import { fetchPracticeText } from './services/geminiService';
 import { StatsBoard } from './components/StatsBoard';
 import { TypingArea } from './components/TypingArea';
 import { DrillArea } from './components/DrillArea';
-import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2 } from 'lucide-react';
+import { playClickSound } from './utils/sound';
+import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2, Volume2, VolumeX } from 'lucide-react';
 
 const App: React.FC = () => {
   // Global State
   const [mode, setMode] = useState<GameMode>(GameMode.PRACTICE);
   const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   
   // Practice Mode State
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.NOVICE);
@@ -60,6 +62,19 @@ const App: React.FC = () => {
     };
   }, [initGame]);
 
+  // --- Global Key Handlers ---
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        e.preventDefault(); // Prevent focus navigation
+        initGame();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [initGame]);
+
   // --- Fullscreen Logic ---
   useEffect(() => {
     const handleFullScreenChange = () => {
@@ -106,6 +121,12 @@ const App: React.FC = () => {
 
   const handlePracticeInput = (input: string) => {
     if (status === GameStatus.FINISHED || status === GameStatus.LOADING) return;
+    
+    // Play sound if input length increased (typing)
+    if (soundEnabled && input.length > userInput.length) {
+      playClickSound();
+    }
+
     if (status === GameStatus.IDLE) {
       setStatus(GameStatus.PLAYING);
       setStartTime(Date.now());
@@ -174,6 +195,15 @@ const App: React.FC = () => {
                 <Gamepad2 className="w-4 h-4" /> Drill
               </button>
             </div>
+
+            {/* Sound Toggle */}
+            <button 
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                title={soundEnabled ? "Mute Sound" : "Enable Sound"}
+              >
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
             
              {/* Fullscreen Button */}
              <button 
@@ -245,6 +275,7 @@ const App: React.FC = () => {
                  <DrillArea 
                     difficulty={drillDifficulty}
                     status={status}
+                    soundEnabled={soundEnabled}
                     onStart={handleDrillStart}
                     onFinish={finishGame} // Drill doesn't really finish automatically, but supports manual reset
                  />
