@@ -13,15 +13,15 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  
+
   // Practice Mode State
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.NOVICE);
   const [targetText, setTargetText] = useState<string>("Loading...");
   const [userInput, setUserInput] = useState<string>("");
-  
+
   // Drill Mode State
   const [drillDifficulty, setDrillDifficulty] = useState<DrillDifficulty>(DrillDifficulty.HOME_ROW);
-  
+
   // Shared Stats
   const [startTime, setStartTime] = useState<number | null>(null);
   const [stats, setStats] = useState<GameStats>({
@@ -40,18 +40,18 @@ const App: React.FC = () => {
     setStatus(GameStatus.LOADING);
     setStartTime(null);
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     // Reset Stats
     setStats({ wpm: 0, accuracy: 100, timeElapsed: 0, errors: 0, totalChars: 0 });
 
     if (mode === GameMode.PRACTICE) {
-        setUserInput("");
-        const text = await fetchPracticeText(difficulty);
-        setTargetText(text);
-        setStatus(GameStatus.IDLE);
+      setUserInput("");
+      const text = await fetchPracticeText(difficulty);
+      setTargetText(text);
+      setStatus(GameStatus.IDLE);
     } else {
-        // Drill mode is instant
-        setStatus(GameStatus.IDLE);
+      // Drill mode is instant
+      setStatus(GameStatus.IDLE);
     }
   }, [difficulty, mode]);
 
@@ -103,7 +103,7 @@ const App: React.FC = () => {
       timerRef.current = window.setInterval(() => {
         const now = Date.now();
         const elapsedSec = Math.floor((now - startTime) / 1000);
-        
+
         setStats(prev => ({
           ...prev,
           timeElapsed: elapsedSec,
@@ -121,7 +121,7 @@ const App: React.FC = () => {
 
   const handlePracticeInput = (input: string) => {
     if (status === GameStatus.FINISHED || status === GameStatus.LOADING) return;
-    
+
     // Play sound if input length increased (typing)
     if (soundEnabled && input.length > userInput.length) {
       playClickSound();
@@ -137,8 +137,8 @@ const App: React.FC = () => {
       if (input[i] !== targetText[i]) errors++;
     }
 
-    const accuracy = input.length > 0 
-      ? Math.max(0, Math.round(((input.length - errors) / input.length) * 100)) 
+    const accuracy = input.length > 0
+      ? Math.max(0, Math.round(((input.length - errors) / input.length) * 100))
       : 100;
 
     setUserInput(input);
@@ -149,8 +149,8 @@ const App: React.FC = () => {
 
   const handleDrillStart = () => {
     if (status === GameStatus.IDLE) {
-        setStatus(GameStatus.PLAYING);
-        setStartTime(Date.now());
+      setStatus(GameStatus.PLAYING);
+      setStartTime(Date.now());
     }
   };
 
@@ -161,7 +161,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-dark-bg text-slate-200 flex flex-col items-center p-4 selection:bg-neon-blue/30 selection:text-white overflow-y-auto">
-      
+
       {/* Header */}
       <header className="w-full max-w-7xl p-6 flex flex-col md:flex-row gap-6 justify-between items-center z-20">
         <div className="flex items-center gap-3">
@@ -172,81 +172,77 @@ const App: React.FC = () => {
             NeonType<span className="text-neon-blue">.ai</span>
           </h1>
         </div>
-        
+
         <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-          
+
           <div className="flex items-center gap-4">
             {/* Mode Switcher */}
             <div className="bg-dark-surface/80 p-1 rounded-lg border border-white/10 flex">
               <button
                 onClick={() => setMode(GameMode.PRACTICE)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
-                  mode === GameMode.PRACTICE ? 'bg-neon-blue text-black shadow-lg' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === GameMode.PRACTICE ? 'bg-neon-blue text-black shadow-lg' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <Type className="w-4 h-4" /> Practice
               </button>
               <button
                 onClick={() => setMode(GameMode.DRILL)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
-                  mode === GameMode.DRILL ? 'bg-neon-purple text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === GameMode.DRILL ? 'bg-neon-purple text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <Gamepad2 className="w-4 h-4" /> Drill
               </button>
             </div>
 
             {/* Sound Toggle */}
-            <button 
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                title={soundEnabled ? "Mute Sound" : "Enable Sound"}
-              >
-                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+              title={soundEnabled ? "Mute Sound" : "Enable Sound"}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
-            
-             {/* Fullscreen Button */}
-             <button 
-                onClick={toggleFullScreen}
-                className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                title="Toggle Fullscreen"
-              >
-                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+
+            {/* Fullscreen Button */}
+            <button
+              onClick={toggleFullScreen}
+              className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+              title="Toggle Fullscreen"
+            >
+              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
 
           {/* Difficulty Selector */}
           <div className="flex bg-dark-surface border border-white/10 rounded-lg p-1 overflow-x-auto max-w-[300px] md:max-w-none scrollbar-hide">
             {mode === GameMode.PRACTICE ? (
-                (Object.keys(Difficulty) as Array<keyof typeof Difficulty>).map((level) => (
+              (Object.keys(Difficulty) as Array<keyof typeof Difficulty>).map((level) => (
                 <button
-                    key={level}
-                    onClick={() => setDifficulty(Difficulty[level])}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${
-                    difficulty === Difficulty[level]
-                        ? 'bg-white text-black shadow-lg'
-                        : 'text-slate-500 hover:text-white'
+                  key={level}
+                  onClick={() => setDifficulty(Difficulty[level])}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${difficulty === Difficulty[level]
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-slate-500 hover:text-white'
                     }`}
-                    disabled={status === GameStatus.PLAYING}
+                  disabled={status === GameStatus.PLAYING}
                 >
-                    {Difficulty[level]}
+                  {Difficulty[level]}
                 </button>
-                ))
+              ))
             ) : (
-                (Object.keys(DrillDifficulty) as Array<keyof typeof DrillDifficulty>).map((level) => (
+              (Object.keys(DrillDifficulty) as Array<keyof typeof DrillDifficulty>).map((level) => (
                 <button
-                    key={level}
-                    onClick={() => setDrillDifficulty(DrillDifficulty[level])}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${
-                    drillDifficulty === DrillDifficulty[level]
-                        ? 'bg-white text-black shadow-lg'
-                        : 'text-slate-500 hover:text-white'
+                  key={level}
+                  onClick={() => setDrillDifficulty(DrillDifficulty[level])}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${drillDifficulty === DrillDifficulty[level]
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-slate-500 hover:text-white'
                     }`}
-                    disabled={status === GameStatus.PLAYING}
+                  disabled={status === GameStatus.PLAYING}
                 >
-                    {DrillDifficulty[level]}
+                  {DrillDifficulty[level]}
                 </button>
-                ))
+              ))
             )}
           </div>
         </div>
@@ -254,32 +250,33 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="w-full max-w-7xl flex flex-col items-center z-10 mt-8 md:mt-16 mb-20 flex-grow">
-        
+
         {/* Render different components based on mode */}
         {mode === GameMode.PRACTICE ? (
-            <>
-                <StatsBoard stats={stats} />
-                <div className="w-full flex justify-center relative mt-4">
-                    <div className="absolute -top-10 -left-10 w-20 h-20 bg-neon-purple/20 rounded-full blur-3xl"></div>
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-neon-blue/20 rounded-full blur-3xl"></div>
-                    <TypingArea 
-                        targetText={targetText}
-                        userInput={userInput}
-                        status={status}
-                        onInputChange={handlePracticeInput}
-                    />
-                </div>
-            </>
-        ) : (
-            <div className="w-full relative mt-4">
-                 <DrillArea 
-                    difficulty={drillDifficulty}
-                    status={status}
-                    soundEnabled={soundEnabled}
-                    onStart={handleDrillStart}
-                    onFinish={finishGame} // Drill doesn't really finish automatically, but supports manual reset
-                 />
+          <>
+            <StatsBoard stats={stats} />
+            <div className="w-full flex justify-center relative mt-4">
+              <div className="absolute -top-10 -left-10 w-20 h-20 bg-neon-purple/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-neon-blue/20 rounded-full blur-3xl"></div>
+              <TypingArea
+                targetText={targetText}
+                userInput={userInput}
+                status={status}
+                onInputChange={handlePracticeInput}
+              />
             </div>
+          </>
+        ) : (
+          <div className="w-full relative mt-4">
+            <DrillArea
+              difficulty={drillDifficulty}
+              status={status}
+              soundEnabled={soundEnabled}
+              onStart={handleDrillStart}
+              onFinish={finishGame}
+              timeElapsed={stats.timeElapsed}
+            />
+          </div>
         )}
 
         {/* Controls */}
@@ -306,9 +303,9 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-[#0f1123] border border-white/10 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-purple to-neon-red"></div>
-            
+
             <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-            
+
             <h2 className="text-3xl font-bold text-white mb-2">Session Complete</h2>
             <p className="text-slate-400 mb-8">Great job! Here is how you performed.</p>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DrillDifficulty, GameStatus } from '../types';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { playClickSound } from '../utils/sound';
-import { Zap, Target, Crosshair } from 'lucide-react';
+import { Zap, Target, Crosshair, Timer } from 'lucide-react';
 
 interface DrillAreaProps {
   difficulty: DrillDifficulty;
@@ -10,6 +10,7 @@ interface DrillAreaProps {
   soundEnabled: boolean;
   onStart: () => void;
   onFinish: (score: number, accuracy: number) => void;
+  timeElapsed: number;
 }
 
 const KEYS = {
@@ -19,7 +20,7 @@ const KEYS = {
   [DrillDifficulty.ALL]: "abcdefghijklmnopqrstuvwxyz0123456789[];',./"
 };
 
-export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundEnabled, onStart, onFinish }) => {
+export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundEnabled, onStart, onFinish, timeElapsed }) => {
   const [targetKey, setTargetKey] = useState<string>("");
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -68,7 +69,7 @@ export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundE
     }
 
     setPressedKey(key);
-    
+
     // Clear visual press feedback quickly
     setTimeout(() => setPressedKey(null), 150);
 
@@ -96,42 +97,46 @@ export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundE
         onKeyDown={handleKeyDown}
         autoFocus
         onBlur={(e) => {
-            // Keep focus if playing
-            if(status === GameStatus.PLAYING) e.target.focus();
+          // Keep focus if playing
+          if (status === GameStatus.PLAYING) e.target.focus();
         }}
       />
 
       {/* Drill HUD */}
       <div className="flex gap-8 md:gap-16">
         <div className="flex flex-col items-center">
-            <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Crosshair className="w-3 h-3"/> Score</span>
-            <span className="text-2xl font-mono text-white font-bold">{score}</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Crosshair className="w-3 h-3" /> Score</span>
+          <span className="text-2xl font-mono text-white font-bold">{score}</span>
         </div>
         <div className="flex flex-col items-center">
-            <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400"/> Combo</span>
-            <span className={`text-2xl font-mono font-bold ${combo > 5 ? 'text-yellow-400 animate-pulse' : 'text-white'}`}>{combo}x</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> Combo</span>
+          <span className={`text-2xl font-mono font-bold ${combo > 5 ? 'text-yellow-400 animate-pulse' : 'text-white'}`}>{combo}x</span>
         </div>
         <div className="flex flex-col items-center">
-            <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Target className="w-3 h-3 text-neon-green"/> Accuracy</span>
-            <span className="text-2xl font-mono text-white font-bold">{accuracy}%</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Timer className="w-3 h-3 text-neon-blue" /> Time</span>
+          <span className="text-2xl font-mono text-white font-bold">{timeElapsed}s</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Target className="w-3 h-3 text-neon-green" /> Accuracy</span>
+          <span className="text-2xl font-mono text-white font-bold">{accuracy}%</span>
         </div>
       </div>
 
       {/* Main Target Display */}
       <div className="relative w-40 h-40 flex items-center justify-center">
-         <div className="absolute inset-0 bg-neon-blue/10 rounded-full blur-xl animate-pulse-slow"></div>
-         <div className={`
+        <div className="absolute inset-0 bg-neon-blue/10 rounded-full blur-xl animate-pulse-slow"></div>
+        <div className={`
             relative z-10 w-32 h-32 flex items-center justify-center 
             bg-dark-surface border-2 rounded-3xl text-6xl font-mono font-bold text-white shadow-2xl
             transition-all duration-100
             ${status === GameStatus.IDLE ? 'border-white/20' : 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.3)]'}
          `}>
-            {status === GameStatus.IDLE ? (
-                <span className="text-sm text-center text-slate-500 px-4">Press any key</span>
-            ) : (
-                targetKey === ' ' ? '␣' : targetKey
-            )}
-         </div>
+          {status === GameStatus.IDLE ? (
+            <span className="text-sm text-center text-slate-500 px-4">Press any key</span>
+          ) : (
+            targetKey === ' ' ? '␣' : targetKey
+          )}
+        </div>
       </div>
 
       {/* Virtual Keyboard */}
