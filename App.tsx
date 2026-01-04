@@ -116,8 +116,11 @@ const App: React.FC = () => {
     const handleFullScreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
+
     document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
   }, []);
 
   const toggleFullScreen = () => {

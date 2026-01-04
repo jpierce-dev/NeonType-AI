@@ -15,6 +15,8 @@ export default defineConfig({
         short_name: 'NeonType',
         description: 'Futuristic AI Powered Typing Practice',
         theme_color: '#0f172a',
+        display: 'fullscreen',
+        background_color: '#0f172a',
         icons: [
           {
             src: 'pwa-192x192.png',
