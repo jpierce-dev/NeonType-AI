@@ -36,3 +36,19 @@ export interface CharacterStatus {
   char: string;
   status: 'correct' | 'incorrect' | 'pending' | 'current';
 }
+
+export interface DrillHistoryItem {
+  timestamp: number;
+  difficulty: DrillDifficulty;
+  score: number;
+  accuracy: number;
+  duration: number;
+}
+
+export interface PracticeHistoryItem {
+  timestamp: number;
+  difficulty: Difficulty;
+  wpm: number;
+  accuracy: number;
+  duration: number;
+}

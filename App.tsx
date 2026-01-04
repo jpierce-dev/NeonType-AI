@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty } from './types';
+import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty } from './types';
 import { fetchPracticeText } from './services/geminiService';
 import { StatsBoard } from './components/StatsBoard';
 import { TypingArea } from './components/TypingArea';
 import { DrillArea } from './components/DrillArea';
+import { HistoryModal } from './components/HistoryModal';
 import { playClickSound } from './utils/sound';
-import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2, Volume2, VolumeX } from 'lucide-react';
+import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2, Volume2, VolumeX, History } from 'lucide-react';
 
 const App: React.FC = () => {
   // Global State
-  const [mode, setMode] = useState<GameMode>(GameMode.PRACTICE);
+  const [mode, setMode] = useState<GameMode>(GameMode.DRILL);
   const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // History State
+  const [drillHistory, setDrillHistory] = useState<DrillHistoryItem[]>([]);
+  const [practiceHistory, setPracticeHistory] = useState<PracticeHistoryItem[]>([]);
 
   // Practice Mode State
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.NOVICE);
@@ -34,7 +40,37 @@ const App: React.FC = () => {
 
   const timerRef = useRef<number | null>(null);
 
-  // --- Initialization ---
+  // --- Persistence ---
+
+  useEffect(() => {
+    // Load Drill History
+    const savedDrill = localStorage.getItem('drill_history');
+    if (savedDrill) {
+      try { setDrillHistory(JSON.parse(savedDrill)); } catch (e) { console.error(e); }
+    }
+
+    // Load Practice History
+    const savedPractice = localStorage.getItem('practice_history');
+    if (savedPractice) {
+      try { setPracticeHistory(JSON.parse(savedPractice)); } catch (e) { console.error(e); }
+    }
+  }, []);
+
+  const saveDrillSession = useCallback((item: DrillHistoryItem) => {
+    setDrillHistory(prev => {
+      const updated = [item, ...prev].slice(0, 20);
+      localStorage.setItem('drill_history', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const savePracticeSession = useCallback((item: PracticeHistoryItem) => {
+    setPracticeHistory(prev => {
+      const updated = [item, ...prev].slice(0, 20);
+      localStorage.setItem('practice_history', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const initGame = useCallback(async () => {
     setStatus(GameStatus.LOADING);
@@ -157,6 +193,20 @@ const App: React.FC = () => {
   const finishGame = () => {
     setStatus(GameStatus.FINISHED);
     if (timerRef.current) clearInterval(timerRef.current);
+
+    // Save Practice History if applicable
+    if (mode === GameMode.PRACTICE && startTime) {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      if (stats.totalChars > 10) { // Only save if they actually typed something substantial
+        savePracticeSession({
+          timestamp: Date.now(),
+          difficulty,
+          wpm: stats.wpm,
+          accuracy: stats.accuracy,
+          duration: duration
+        });
+      }
+    }
   };
 
   return (
@@ -211,6 +261,15 @@ const App: React.FC = () => {
             >
               {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
+
+            {/* History Button */}
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+              title="View History"
+            >
+              <History className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Difficulty Selector */}
@@ -221,8 +280,8 @@ const App: React.FC = () => {
                   key={level}
                   onClick={() => setDifficulty(Difficulty[level])}
                   className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${difficulty === Difficulty[level]
-                      ? 'bg-white text-black shadow-lg'
-                      : 'text-slate-500 hover:text-white'
+                    ? 'bg-white text-black shadow-lg'
+                    : 'text-slate-500 hover:text-white'
                     }`}
                   disabled={status === GameStatus.PLAYING}
                 >
@@ -235,8 +294,8 @@ const App: React.FC = () => {
                   key={level}
                   onClick={() => setDrillDifficulty(DrillDifficulty[level])}
                   className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${drillDifficulty === DrillDifficulty[level]
-                      ? 'bg-white text-black shadow-lg'
-                      : 'text-slate-500 hover:text-white'
+                    ? 'bg-white text-black shadow-lg'
+                    : 'text-slate-500 hover:text-white'
                     }`}
                   disabled={status === GameStatus.PLAYING}
                 >
@@ -274,6 +333,7 @@ const App: React.FC = () => {
               soundEnabled={soundEnabled}
               onStart={handleDrillStart}
               onFinish={finishGame}
+              onSessionComplete={saveDrillSession}
               timeElapsed={stats.timeElapsed}
             />
           </div>
@@ -329,6 +389,15 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* History Modal */}
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        mode={mode}
+        drillHistory={drillHistory}
+        practiceHistory={practiceHistory}
+      />
     </div>
   );
 };

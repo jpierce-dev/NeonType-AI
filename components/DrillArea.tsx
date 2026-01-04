@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { DrillDifficulty, GameStatus } from '../types';
+import { DrillDifficulty, GameStatus, DrillHistoryItem } from '../types';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { playClickSound } from '../utils/sound';
 import { Zap, Target, Crosshair, Timer } from 'lucide-react';
@@ -9,7 +9,8 @@ interface DrillAreaProps {
   status: GameStatus;
   soundEnabled: boolean;
   onStart: () => void;
-  onFinish: (score: number, accuracy: number) => void;
+  onFinish: () => void;
+  onSessionComplete: (item: DrillHistoryItem) => void;
   timeElapsed: number;
 }
 
@@ -20,13 +21,29 @@ const KEYS = {
   [DrillDifficulty.ALL]: "abcdefghijklmnopqrstuvwxyz0123456789[];',./"
 };
 
-export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundEnabled, onStart, onFinish, timeElapsed }) => {
+export const DrillArea: React.FC<DrillAreaProps> = ({
+  difficulty,
+  status,
+  soundEnabled,
+  onStart,
+  onFinish,
+  onSessionComplete,
+  timeElapsed
+}) => {
   const [targetKey, setTargetKey] = useState<string>("");
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
   const [combo, setCombo] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef(0);
+
+  // Track time for history (since props reset on finish)
+  useEffect(() => {
+    if (status === GameStatus.PLAYING) {
+      timeRef.current = timeElapsed;
+    }
+  }, [timeElapsed, status]);
 
   // Generate a random key based on difficulty
   const nextKey = useCallback(() => {
@@ -35,15 +52,28 @@ export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundE
     setTargetKey(randomChar);
   }, [difficulty]);
 
-  // Start logic
+  // Start/Reset Logic
   useEffect(() => {
     if (status === GameStatus.IDLE) {
+      // Save history if we have a real session
+      if (score > 0 || total > 0) {
+        const newItem: DrillHistoryItem = {
+          timestamp: Date.now(),
+          difficulty,
+          score,
+          accuracy: total > 0 ? Math.round((score / total) * 100) : 0,
+          duration: timeRef.current
+        };
+        onSessionComplete(newItem);
+      }
+
       setScore(0);
       setTotal(0);
       setCombo(0);
+      timeRef.current = 0;
       nextKey();
     }
-  }, [status, difficulty, nextKey]);
+  }, [status, difficulty, nextKey, score, total, onSessionComplete]);
 
   // Focus management
   useEffect(() => {
@@ -143,7 +173,6 @@ export const DrillArea: React.FC<DrillAreaProps> = ({ difficulty, status, soundE
       <div className="w-full">
         <VirtualKeyboard activeKey={targetKey} pressedKey={pressedKey} />
       </div>
-
     </div>
   );
 };
