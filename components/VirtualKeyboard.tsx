@@ -1,12 +1,44 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 
 interface VirtualKeyboardProps {
   activeKey: string;
   pressedKey: string | null;
 }
 
-export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ activeKey, pressedKey }) => {
-  const rows = [
+interface KeyProps {
+  keyObj: { key: string, w: number, label?: string };
+  isActive: boolean;
+  isPressed: boolean;
+}
+
+const Key: React.FC<KeyProps> = memo(({ keyObj, isActive, isPressed }) => {
+  let baseStyle = "h-12 md:h-16 lg:h-20 m-0.5 md:m-1 rounded-lg flex items-center justify-center text-sm md:text-lg lg:text-xl font-mono transition-all duration-75 border border-white/10 ";
+
+  if (isActive) {
+    baseStyle += "bg-neon-blue text-black shadow-[0_0_25px_#00f3ff] scale-95 font-bold border-neon-blue z-10";
+  } else if (isPressed) {
+    baseStyle += "bg-white/20 text-white scale-90 border-white/50";
+  } else {
+    baseStyle += "bg-dark-surface/80 text-slate-400 hover:bg-white/5";
+  }
+
+  return (
+    <div
+      className={baseStyle}
+      style={{
+        width: `${keyObj.w * 3.5}rem`,
+        flexGrow: keyObj.w,
+        flexShrink: 1,
+        minWidth: '0'
+      }}
+    >
+      {keyObj.label !== undefined ? keyObj.label : keyObj.key.toUpperCase()}
+    </div>
+  );
+});
+
+export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = memo(({ activeKey, pressedKey }) => {
+  const rows = useMemo(() => [
     [
       { key: '`', w: 1 }, { key: '1', w: 1 }, { key: '2', w: 1 }, { key: '3', w: 1 }, { key: '4', w: 1 }, { key: '5', w: 1 }, { key: '6', w: 1 }, { key: '7', w: 1 }, { key: '8', w: 1 }, { key: '9', w: 1 }, { key: '0', w: 1 }, { key: '-', w: 1 }, { key: '=', w: 1 }, { key: 'Backspace', w: 2, label: '⌫' }
     ],
@@ -22,49 +54,31 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ activeKey, pre
     [
       { key: 'Space', w: 6, label: '' }
     ]
-  ];
+  ], []);
 
-  const getKeyStyle = (keyObj: { key: string, label?: string }) => {
-    const k = keyObj.key.toLowerCase();
-    const active = activeKey.toLowerCase();
-    
-    // Handle special mappings or strict equality
-    const isActive = k === active || (keyObj.label === '' && active === ' ');
-    const isPressed = pressedKey?.toLowerCase() === k || (keyObj.label === '' && pressedKey === ' ');
-
-    let baseStyle = "h-12 md:h-16 lg:h-20 m-0.5 md:m-1 rounded-lg flex items-center justify-center text-sm md:text-lg lg:text-xl font-mono transition-all duration-75 border border-white/10 ";
-    
-    if (isActive) {
-      return baseStyle + "bg-neon-blue text-black shadow-[0_0_25px_#00f3ff] scale-95 font-bold border-neon-blue z-10";
-    }
-    
-    if (isPressed) {
-      return baseStyle + "bg-white/20 text-white scale-90 border-white/50";
-    }
-
-    return baseStyle + "bg-dark-surface/80 text-slate-400 hover:bg-white/5";
-  };
+  const active = activeKey.toLowerCase();
+  const pressed = pressedKey?.toLowerCase();
 
   return (
     <div className="w-full max-w-6xl mx-auto p-2 md:p-6 lg:p-8 bg-dark-bg/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm select-none">
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="flex justify-center w-full">
-          {row.map((keyObj, kIndex) => (
-            <div
-              key={kIndex}
-              className={getKeyStyle(keyObj)}
-              style={{ 
-                width: `${keyObj.w * 3.5}rem`, 
-                flexGrow: keyObj.w,
-                flexShrink: 1,
-                minWidth: '0' 
-              }}
-            >
-              {keyObj.label !== undefined ? keyObj.label : keyObj.key.toUpperCase()}
-            </div>
-          ))}
+          {row.map((keyObj, kIndex) => {
+            const k = keyObj.key.toLowerCase();
+            const isActive = k === active || (keyObj.label === '' && active === ' ');
+            const isPressed = pressed === k || (keyObj.label === '' && pressed === ' ');
+
+            return (
+              <Key
+                key={kIndex}
+                keyObj={keyObj}
+                isActive={isActive}
+                isPressed={isPressed}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
   );
-};
+});

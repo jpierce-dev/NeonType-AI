@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, memo } from 'react';
 import { GameStatus } from '../types';
 
 interface TypingAreaProps {
@@ -8,10 +8,41 @@ interface TypingAreaProps {
   onInputChange: (input: string) => void;
 }
 
+interface CharProps {
+  char: string;
+  index: number;
+  userChar: string | undefined;
+  isCurrent: boolean;
+}
+
+const Character: React.FC<CharProps> = memo(({ char, userChar, isCurrent }) => {
+  let className = "transition-colors duration-75 ";
+
+  if (userChar !== undefined) {
+    if (userChar === char) {
+      className += "text-neon-green drop-shadow-[0_0_2px_rgba(10,255,104,0.5)]";
+    } else {
+      className += "text-neon-red bg-neon-red/10 decoration-neon-red underline decoration-2 underline-offset-4";
+    }
+  } else if (isCurrent) {
+    className += "text-white bg-white/10 rounded-sm";
+  } else {
+    className += "text-slate-600";
+  }
+
+  return (
+    <span className={`${className} relative inline-block min-w-[1ch]`}>
+      {isCurrent && (
+        <span className="absolute left-0 -top-1 w-[2px] h-[1.2em] bg-neon-blue animate-cursor-blink shadow-[0_0_8px_#00f3ff]"></span>
+      )}
+      {char === ' ' ? '\u00A0' : char}
+    </span>
+  );
+});
+
 export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, status, onInputChange }) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<HTMLSpanElement>(null);
 
   // Focus input automatically when playing
   useEffect(() => {
@@ -29,56 +60,27 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
 
   // Auto-scroll logic
   useEffect(() => {
-    if (cursorRef.current && containerRef.current) {
-      const cursorTop = cursorRef.current.offsetTop;
-      const containerHeight = containerRef.current.clientHeight;
-      const scrollTop = containerRef.current.scrollTop;
-      
-      // Scroll if cursor is near bottom
-      if (cursorTop > scrollTop + containerHeight - 60) {
-        containerRef.current.scrollTo({
-          top: cursorTop - 40,
-          behavior: 'smooth'
-        });
+    if (containerRef.current) {
+      const cursorElement = containerRef.current.querySelector('.text-white.bg-white\\/10');
+      if (cursorElement instanceof HTMLElement) {
+        const cursorTop = cursorElement.offsetTop;
+        const containerHeight = containerRef.current.clientHeight;
+        const scrollTop = containerRef.current.scrollTop;
+
+        if (cursorTop > scrollTop + containerHeight - 60) {
+          containerRef.current.scrollTo({
+            top: cursorTop - 40,
+            behavior: 'smooth'
+          });
+        }
       }
     }
   }, [userInput]);
 
-  const renderedText = useMemo(() => {
-    return targetText.split('').map((char, index) => {
-      let className = "transition-colors duration-75 ";
-      let isCurrent = false;
-
-      if (index < userInput.length) {
-        if (userInput[index] === char) {
-          className += "text-neon-green drop-shadow-[0_0_2px_rgba(10,255,104,0.5)]";
-        } else {
-          className += "text-neon-red bg-neon-red/10 decoration-neon-red underline decoration-2 underline-offset-4";
-        }
-      } else if (index === userInput.length) {
-        className += "text-white bg-white/10 rounded-sm";
-        isCurrent = true;
-      } else {
-        className += "text-slate-600";
-      }
-
-      return (
-        <span 
-          key={index} 
-          ref={isCurrent ? cursorRef : null}
-          className={`${className} relative inline-block min-w-[1ch]`}
-        >
-          {isCurrent && (
-            <span className="absolute left-0 -top-1 w-[2px] h-[1.2em] bg-neon-blue animate-cursor-blink shadow-[0_0_8px_#00f3ff]"></span>
-          )}
-          {char === ' ' ? '\u00A0' : char}
-        </span>
-      );
-    });
-  }, [targetText, userInput]);
+  const characters = useMemo(() => targetText.split(''), [targetText]);
 
   return (
-    <div 
+    <div
       className="relative w-full max-w-4xl min-h-[200px] bg-dark-surface/30 backdrop-blur-sm border border-white/5 rounded-2xl p-8 cursor-text overflow-hidden group hover:border-white/10 transition-colors"
       onClick={handleContainerClick}
     >
@@ -96,7 +98,7 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
       />
 
       {/* Visual Text Display */}
-      <div 
+      <div
         ref={containerRef}
         className="font-mono text-2xl md:text-3xl leading-relaxed break-words outline-none max-h-[300px] overflow-y-auto pr-4 scrollbar-hide"
         style={{ whiteSpace: 'pre-wrap' }}
@@ -108,7 +110,15 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
             <div className="w-3 h-3 bg-neon-green rounded-full animate-bounce"></div>
           </div>
         ) : (
-          renderedText
+          characters.map((char, index) => (
+            <Character
+              key={index}
+              char={char}
+              index={index}
+              userChar={userInput[index]}
+              isCurrent={index === userInput.length}
+            />
+          ))
         )}
       </div>
 

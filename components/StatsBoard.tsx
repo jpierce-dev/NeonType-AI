@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { GameStats } from '../types';
 import { Timer, Zap, Target, AlertCircle } from 'lucide-react';
 
@@ -6,28 +6,28 @@ interface StatsBoardProps {
   stats: GameStats;
 }
 
-export const StatsBoard: React.FC<StatsBoardProps> = ({ stats }) => {
+export const StatsBoard: React.FC<StatsBoardProps> = memo(({ stats }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mb-8">
-      <StatCard 
+      <StatCard
         icon={<Timer className="w-5 h-5 text-neon-blue" />}
         label="Time"
         value={`${stats.timeElapsed}s`}
         color="border-neon-blue/30"
       />
-      <StatCard 
+      <StatCard
         icon={<Zap className="w-5 h-5 text-neon-purple" />}
         label="WPM"
         value={stats.wpm}
         color="border-neon-purple/30"
       />
-      <StatCard 
+      <StatCard
         icon={<Target className="w-5 h-5 text-neon-green" />}
         label="Accuracy"
         value={`${stats.accuracy}%`}
         color="border-neon-green/30"
       />
-      <StatCard 
+      <StatCard
         icon={<AlertCircle className="w-5 h-5 text-neon-red" />}
         label="Errors"
         value={stats.errors}
@@ -35,7 +35,7 @@ export const StatsBoard: React.FC<StatsBoardProps> = ({ stats }) => {
       />
     </div>
   );
-};
+});
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -44,7 +44,7 @@ interface StatCardProps {
   color: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => (
+const StatCard: React.FC<StatCardProps> = memo(({ icon, label, value, color }) => (
   <div className={`bg-dark-surface/50 backdrop-blur-md border ${color} rounded-xl p-4 flex flex-col items-center justify-center transition-all hover:bg-dark-surface/80`}>
     <div className="flex items-center gap-2 mb-2 text-slate-400 text-sm font-medium uppercase tracking-wider">
       {icon}
@@ -54,4 +54,4 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => (
       {value}
     </div>
   </div>
-);
+));

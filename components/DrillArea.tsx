@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { DrillDifficulty, GameStatus, DrillHistoryItem } from '../types';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { playClickSound } from '../utils/sound';
@@ -21,7 +21,7 @@ const KEYS = {
   [DrillDifficulty.ALL]: "abcdefghijklmnopqrstuvwxyz0123456789[];',./"
 };
 
-export const DrillArea: React.FC<DrillAreaProps> = ({
+export const DrillArea: React.FC<DrillAreaProps> = memo(({
   difficulty,
   status,
   soundEnabled,
@@ -175,4 +175,4 @@ export const DrillArea: React.FC<DrillAreaProps> = ({
       </div>
     </div>
   );
-};
+});

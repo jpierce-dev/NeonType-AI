@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { X, Trophy, Target, Clock, Calendar } from 'lucide-react';
 import { DrillHistoryItem, PracticeHistoryItem, GameMode } from '../types';
 
@@ -10,7 +10,7 @@ interface HistoryModalProps {
     practiceHistory: PracticeHistoryItem[];
 }
 
-export const HistoryModal: React.FC<HistoryModalProps> = ({
+export const HistoryModal: React.FC<HistoryModalProps> = memo(({
     isOpen,
     onClose,
     mode,
@@ -93,4 +93,4 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             </div>
         </div>
     );
-};
+});
