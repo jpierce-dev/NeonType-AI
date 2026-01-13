@@ -20,7 +20,9 @@ const Character: React.FC<CharProps> = memo(({ char, userChar, isCurrent }) => {
 
   if (userChar !== undefined) {
     if (userChar === char) {
-      className += "text-neon-green drop-shadow-[0_0_2px_rgba(10,255,104,0.5)]";
+      // Removed drop-shadow as it's expensive when applied to many elements
+      // Using just bright color for performance
+      className += "text-neon-green";
     } else {
       className += "text-neon-red bg-neon-red/10 decoration-neon-red underline decoration-2 underline-offset-4";
     }
@@ -61,21 +63,24 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
   // Auto-scroll logic
   useEffect(() => {
     if (containerRef.current) {
-      const cursorElement = containerRef.current.querySelector('.text-white.bg-white\\/10');
-      if (cursorElement instanceof HTMLElement) {
+      // Direct access to children is much faster than querySelector
+      const currentIndex = userInput.length;
+      const cursorElement = containerRef.current.children[currentIndex] as HTMLElement;
+
+      if (cursorElement) {
         const cursorTop = cursorElement.offsetTop;
         const containerHeight = containerRef.current.clientHeight;
         const scrollTop = containerRef.current.scrollTop;
 
-        if (cursorTop > scrollTop + containerHeight - 60) {
+        if (cursorTop > scrollTop + containerHeight - 80) {
           containerRef.current.scrollTo({
-            top: cursorTop - 40,
+            top: cursorTop - 60,
             behavior: 'smooth'
           });
         }
       }
     }
-  }, [userInput]);
+  }, [userInput.length]); // Only depend on length change
 
   const characters = useMemo(() => targetText.split(''), [targetText]);
 

@@ -153,20 +153,25 @@ const App: React.FC = () => {
   }, []);
 
   const saveDrillSession = useCallback((item: DrillHistoryItem) => {
-    setDrillHistory(prev => {
-      const updated = [item, ...prev].slice(0, 20);
-      localStorage.setItem('drill_history', JSON.stringify(updated));
-      return updated;
-    });
+    setDrillHistory(prev => [item, ...prev].slice(0, 20));
   }, []);
 
   const savePracticeSession = useCallback((item: PracticeHistoryItem) => {
-    setPracticeHistory(prev => {
-      const updated = [item, ...prev].slice(0, 20);
-      localStorage.setItem('practice_history', JSON.stringify(updated));
-      return updated;
-    });
+    setPracticeHistory(prev => [item, ...prev].slice(0, 20));
   }, []);
+
+  // Sync history to localStorage
+  useEffect(() => {
+    if (drillHistory.length > 0) {
+      localStorage.setItem('drill_history', JSON.stringify(drillHistory));
+    }
+  }, [drillHistory]);
+
+  useEffect(() => {
+    if (practiceHistory.length > 0) {
+      localStorage.setItem('practice_history', JSON.stringify(practiceHistory));
+    }
+  }, [practiceHistory]);
 
   const initGame = useCallback(async () => {
     setStatus(GameStatus.LOADING);
@@ -257,10 +262,6 @@ const App: React.FC = () => {
   const handlePracticeInput = useCallback((input: string) => {
     if (status === GameStatus.FINISHED || status === GameStatus.LOADING) return;
 
-    // Play sound if input length increased (typing)
-    // We can't easily check userInput.length here because it's stale in useCallback
-    // But we can use the functional update of status and startTime
-
     if (status === GameStatus.IDLE) {
       setStatus(GameStatus.PLAYING);
       setStartTime(Date.now());
@@ -270,6 +271,8 @@ const App: React.FC = () => {
       playClickSound();
     }
 
+    // Calculate errors only for the current length to be slightly more efficient
+    // but honestly for lengths < 1000 it's fine.
     let errors = 0;
     for (let i = 0; i < input.length; i++) {
       if (input[i] !== targetText[i]) errors++;
@@ -280,10 +283,18 @@ const App: React.FC = () => {
       : 100;
 
     setUserInput(input);
-    setStats(prev => ({ ...prev, errors, accuracy, totalChars: input.length }));
 
-    if (input.length === targetText.length) finishGame();
-  }, [status, targetText, soundEnabled]);
+    // We update stats, but we'll use a local variable for the final check
+    const newStats = { errors, accuracy, totalChars: input.length };
+    setStats(prev => ({ ...prev, ...newStats }));
+
+    if (input.length === targetText.length) {
+      // Pass the current stats to finishGame to avoid stale state or weird side effects
+      const elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+      const finalWpm = elapsedSec > 0 ? Math.round((input.length / 5) / (elapsedSec / 60)) : 0;
+      finishGame({ ...newStats, wpm: finalWpm });
+    }
+  }, [status, targetText, soundEnabled, startTime]);
 
   const handleDrillStart = useCallback(() => {
     if (status === GameStatus.IDLE) {
@@ -292,27 +303,26 @@ const App: React.FC = () => {
     }
   }, [status]);
 
-  const finishGame = useCallback(() => {
+  const finishGame = useCallback((finalStats?: Partial<GameStats>) => {
     setStatus(GameStatus.FINISHED);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Save Practice History if applicable
     if (mode === GameMode.PRACTICE && startTime) {
-      const duration = Math.floor((Date.now() - startTime) / 1000);
-      // stats.totalChars is used here, but stats is a complex object.
-      // We'll rely on the fact that this is called at the end.
-      setStats(prev => {
-        if (prev.totalChars > 10) {
+      const now = Date.now();
+      const duration = Math.floor((now - startTime) / 1000);
+
+      if (finalStats) {
+        setStats(prev => ({ ...prev, ...finalStats }));
+        if (finalStats.totalChars !== undefined && finalStats.totalChars > 10) {
           savePracticeSession({
-            timestamp: Date.now(),
+            timestamp: now,
             difficulty,
-            wpm: prev.wpm,
-            accuracy: prev.accuracy,
+            wpm: finalStats.wpm ?? 0,
+            accuracy: finalStats.accuracy ?? 100,
             duration: duration
           });
         }
-        return prev;
-      });
+      }
     }
   }, [mode, startTime, difficulty, savePracticeSession]);
 
