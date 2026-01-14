@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty } from './types';
 import { fetchPracticeText } from './services/geminiService';
+import { logAppEvent } from './services/firebase';
 import { StatsBoard } from './components/StatsBoard';
 import { TypingArea } from './components/TypingArea';
 import { DrillArea } from './components/DrillArea';
@@ -110,6 +111,10 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  useEffect(() => {
+    logAppEvent('page_view', { page_title: 'Home' });
+  }, []);
+
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // History State
@@ -186,11 +191,13 @@ const App: React.FC = () => {
       const text = await fetchPracticeText(difficulty);
       setTargetText(text);
       setStatus(GameStatus.IDLE);
+      logAppEvent('practice_round_init', { difficulty });
     } else {
       // Drill mode is instant
       setStatus(GameStatus.IDLE);
+      logAppEvent('drill_round_init', { difficulty: drillDifficulty });
     }
-  }, [difficulty, mode]);
+  }, [difficulty, mode, drillDifficulty]);
 
   useEffect(() => {
     initGame();
@@ -265,6 +272,7 @@ const App: React.FC = () => {
     if (status === GameStatus.IDLE) {
       setStatus(GameStatus.PLAYING);
       setStartTime(Date.now());
+      logAppEvent('practice_start', { difficulty });
     }
 
     if (soundEnabled) {
@@ -300,8 +308,9 @@ const App: React.FC = () => {
     if (status === GameStatus.IDLE) {
       setStatus(GameStatus.PLAYING);
       setStartTime(Date.now());
+      logAppEvent('drill_start', { difficulty: drillDifficulty });
     }
-  }, [status]);
+  }, [status, drillDifficulty]);
 
   const finishGame = useCallback((finalStats?: Partial<GameStats>) => {
     setStatus(GameStatus.FINISHED);
@@ -314,6 +323,12 @@ const App: React.FC = () => {
       if (finalStats) {
         setStats(prev => ({ ...prev, ...finalStats }));
         if (finalStats.totalChars !== undefined && finalStats.totalChars > 10) {
+          logAppEvent('practice_finish', {
+            difficulty,
+            wpm: finalStats.wpm,
+            accuracy: finalStats.accuracy,
+            duration
+          });
           savePracticeSession({
             timestamp: now,
             difficulty,
@@ -323,8 +338,10 @@ const App: React.FC = () => {
           });
         }
       }
+    } else if (mode === GameMode.DRILL) {
+      logAppEvent('drill_finish', { difficulty: drillDifficulty });
     }
-  }, [mode, startTime, difficulty, savePracticeSession]);
+  }, [mode, startTime, difficulty, drillDifficulty, savePracticeSession]);
 
   return (
     <div className="min-h-screen bg-dark-bg text-slate-200 flex flex-col items-center p-4 selection:bg-neon-blue/30 selection:text-white overflow-y-auto">
