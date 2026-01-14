@@ -48,8 +48,13 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
   // Generate a random key based on difficulty
   const nextKey = useCallback(() => {
     const chars = KEYS[difficulty];
-    const randomChar = chars[Math.floor(Math.random() * chars.length)];
-    setTargetKey(randomChar);
+    setTargetKey(prevKey => {
+      let randomChar = chars[Math.floor(Math.random() * chars.length)];
+      while (randomChar === prevKey && chars.length > 1) {
+        randomChar = chars[Math.floor(Math.random() * chars.length)];
+      }
+      return randomChar;
+    });
   }, [difficulty]);
 
   // Start/Reset Logic

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import confetti from 'canvas-confetti';
 import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty } from './types';
 import { fetchPracticeText } from './services/geminiService';
 import { logAppEvent } from './services/firebase';
@@ -319,6 +320,17 @@ const App: React.FC = () => {
     if (mode === GameMode.PRACTICE && startTime) {
       const now = Date.now();
       const duration = Math.floor((now - startTime) / 1000);
+
+      // Trigger confetti
+      try {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3B82F6', '#BC13FE', '#22c55e', '#ffffff'],
+          zIndex: 100
+        });
+      } catch (e) { console.error('Confetti error:', e); }
 
       if (finalStats) {
         setStats(prev => ({ ...prev, ...finalStats }));
