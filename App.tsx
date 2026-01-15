@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo, useReducer } from 'react';
 import confetti from 'canvas-confetti';
-import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty } from './types';
+import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty, KeystrokeData, KeyAnalytics } from './types';
 import { fetchPracticeText } from './services/geminiService';
 import { logAppEvent } from './services/firebase';
 import { StatsBoard } from './components/StatsBoard';
@@ -9,6 +9,8 @@ import { DrillArea } from './components/DrillArea';
 import { HistoryModal } from './components/HistoryModal';
 import { playClickSound } from './utils/sound';
 import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2, Volume2, VolumeX, History } from 'lucide-react';
+
+// --- Header Component ---
 
 const Header = memo(({
   mode, setMode, soundEnabled, setSoundEnabled, isFullScreen, toggleFullScreen, setIsHistoryOpen, difficulty, setDifficulty, drillDifficulty, setDrillDifficulty, status
@@ -99,6 +101,8 @@ const Header = memo(({
   </header>
 ));
 
+// --- Footer Component ---
+
 const Footer = memo(() => (
   <footer className="fixed bottom-0 w-full p-4 bg-dark-bg/80 backdrop-blur text-slate-600 text-sm flex justify-center gap-6 z-30 border-t border-white/5">
     <span>Press TAB to reset</span>
@@ -106,57 +110,99 @@ const Footer = memo(() => (
   </footer>
 ));
 
+// --- Main App ---
+
 const App: React.FC = () => {
-  // Global State
+  // Global View State
   const [mode, setMode] = useState<GameMode>(GameMode.DRILL);
-  const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  useEffect(() => {
-    logAppEvent('page_view', { page_title: 'Home' });
-  }, []);
-
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // History State
+  // Persistence State
   const [drillHistory, setDrillHistory] = useState<DrillHistoryItem[]>([]);
   const [practiceHistory, setPracticeHistory] = useState<PracticeHistoryItem[]>([]);
 
-  // Practice Mode State
+  // Practice Configuration
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.NOVICE);
   const [targetText, setTargetText] = useState<string>("Loading...");
-  const [userInput, setUserInput] = useState<string>("");
 
-  // Drill Mode State
+  // Drill Configuration
   const [drillDifficulty, setDrillDifficulty] = useState<DrillDifficulty>(DrillDifficulty.HOME_ROW);
+  // Session State with Reducer
+  interface SessionState {
+    status: GameStatus;
+    startTime: number | null;
+    stats: GameStats;
+    userInput: string;
+    keystrokes: KeystrokeData[];
+  }
 
-  // Shared Stats
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [stats, setStats] = useState<GameStats>({
-    wpm: 0,
-    accuracy: 100,
-    timeElapsed: 0,
-    errors: 0,
-    totalChars: 0
-  });
+  type SessionAction =
+    | { type: 'INIT'; status: GameStatus }
+    | { type: 'START'; startTime: number }
+    | { type: 'UPDATE'; userInput: string; stats: Partial<GameStats>; keystroke?: KeystrokeData }
+    | { type: 'FINISH'; status: GameStatus; finalStats?: Partial<GameStats> }
+    | { type: 'SET_TIME'; timeElapsed: number; wpm: number };
+
+  const initialSession: SessionState = {
+    status: GameStatus.IDLE,
+    startTime: null,
+    stats: { wpm: 0, accuracy: 100, timeElapsed: 0, errors: 0, totalChars: 0 },
+    userInput: "",
+    keystrokes: []
+  };
+
+  const sessionReducer = (state: SessionState, action: SessionAction): SessionState => {
+    switch (action.type) {
+      case 'INIT':
+        return { ...initialSession, status: action.status };
+      case 'START':
+        return { ...state, status: GameStatus.PLAYING, startTime: action.startTime };
+      case 'UPDATE':
+        return {
+          ...state,
+          userInput: action.userInput,
+          stats: { ...state.stats, ...action.stats },
+          keystrokes: action.keystroke ? [...state.keystrokes, action.keystroke] : state.keystrokes
+        };
+      case 'FINISH':
+        return { ...state, status: action.status, stats: { ...state.stats, ...action.finalStats } };
+      case 'SET_TIME':
+        return { ...state, stats: { ...state.stats, timeElapsed: action.timeElapsed, wpm: action.wpm } };
+      default:
+        return state;
+    }
+  };
+
+  const [session, dispatch] = useReducer(sessionReducer, initialSession);
+  const { status, startTime, stats, userInput } = session;
 
   const timerRef = useRef<number | null>(null);
 
   // --- Persistence ---
 
   useEffect(() => {
-    // Load Drill History
+    logAppEvent('page_view', { page_title: 'Home' });
+
     const savedDrill = localStorage.getItem('drill_history');
     if (savedDrill) {
       try { setDrillHistory(JSON.parse(savedDrill)); } catch (e) { console.error(e); }
     }
 
-    // Load Practice History
     const savedPractice = localStorage.getItem('practice_history');
     if (savedPractice) {
       try { setPracticeHistory(JSON.parse(savedPractice)); } catch (e) { console.error(e); }
     }
   }, []);
+
+  useEffect(() => {
+    if (drillHistory.length > 0) localStorage.setItem('drill_history', JSON.stringify(drillHistory));
+  }, [drillHistory]);
+
+  useEffect(() => {
+    if (practiceHistory.length > 0) localStorage.setItem('practice_history', JSON.stringify(practiceHistory));
+  }, [practiceHistory]);
 
   const saveDrillSession = useCallback((item: DrillHistoryItem) => {
     setDrillHistory(prev => [item, ...prev].slice(0, 20));
@@ -166,122 +212,81 @@ const App: React.FC = () => {
     setPracticeHistory(prev => [item, ...prev].slice(0, 20));
   }, []);
 
-  // Sync history to localStorage
-  useEffect(() => {
-    if (drillHistory.length > 0) {
-      localStorage.setItem('drill_history', JSON.stringify(drillHistory));
-    }
-  }, [drillHistory]);
-
-  useEffect(() => {
-    if (practiceHistory.length > 0) {
-      localStorage.setItem('practice_history', JSON.stringify(practiceHistory));
-    }
-  }, [practiceHistory]);
+  // --- Game Logic ---
 
   const initGame = useCallback(async () => {
-    setStatus(GameStatus.LOADING);
-    setStartTime(null);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Reset Stats
-    setStats({ wpm: 0, accuracy: 100, timeElapsed: 0, errors: 0, totalChars: 0 });
-
     if (mode === GameMode.PRACTICE) {
-      setUserInput("");
+      dispatch({ type: 'INIT', status: GameStatus.LOADING });
       const text = await fetchPracticeText(difficulty);
       setTargetText(text);
-      setStatus(GameStatus.IDLE);
+      dispatch({ type: 'INIT', status: GameStatus.IDLE });
       logAppEvent('practice_round_init', { difficulty });
     } else {
-      // Drill mode is instant
-      setStatus(GameStatus.IDLE);
+      dispatch({ type: 'INIT', status: GameStatus.IDLE });
       logAppEvent('drill_round_init', { difficulty: drillDifficulty });
     }
   }, [difficulty, mode, drillDifficulty]);
 
   useEffect(() => {
     initGame();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [initGame]);
 
-  // --- Global Key Handlers ---
+  // --- Global Handlers ---
+
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
-        e.preventDefault(); // Prevent focus navigation
+        e.preventDefault();
         initGame();
       }
     };
-
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [initGame]);
 
-  // --- Fullscreen Logic ---
   useEffect(() => {
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-
+    const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullScreenChange);
-    };
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
     }
   };
 
-  // --- Timer & Logic ---
+  // --- Timer ---
 
   useEffect(() => {
     if (status === GameStatus.PLAYING && startTime) {
       timerRef.current = window.setInterval(() => {
         const now = Date.now();
         const elapsedSec = Math.floor((now - startTime) / 1000);
-
-        setStats(prev => ({
-          ...prev,
-          timeElapsed: elapsedSec,
-          wpm: elapsedSec > 0 ? Math.round((prev.totalChars / 5) / (elapsedSec / 60)) : 0
-        }));
+        const wpm = elapsedSec > 0 ? Math.round((stats.totalChars / 5) / (elapsedSec / 60)) : 0;
+        dispatch({ type: 'SET_TIME', timeElapsed: elapsedSec, wpm });
       }, 1000);
     }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [status, startTime, stats.totalChars]);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [status, startTime]);
-
-  // --- Handlers ---
+  // --- Input Handlers ---
 
   const handlePracticeInput = useCallback((input: string) => {
     if (status === GameStatus.FINISHED || status === GameStatus.LOADING) return;
 
     if (status === GameStatus.IDLE) {
-      setStatus(GameStatus.PLAYING);
-      setStartTime(Date.now());
+      dispatch({ type: 'START', startTime: Date.now() });
       logAppEvent('practice_start', { difficulty });
     }
 
-    if (soundEnabled) {
-      playClickSound();
-    }
+    if (soundEnabled) playClickSound();
 
-    // Calculate errors only for the current length to be slightly more efficient
-    // but honestly for lengths < 1000 it's fine.
     let errors = 0;
     for (let i = 0; i < input.length; i++) {
       if (input[i] !== targetText[i]) errors++;
@@ -291,37 +296,53 @@ const App: React.FC = () => {
       ? Math.max(0, Math.round(((input.length - errors) / input.length) * 100))
       : 100;
 
-    setUserInput(input);
+    const lastKeystroke = session.keystrokes[session.keystrokes.length - 1];
+    const now = Date.now();
+    const latency = lastKeystroke ? now - lastKeystroke.timestamp : 0;
 
-    // We update stats, but we'll use a local variable for the final check
+    const keystroke: KeystrokeData = {
+      key: input[input.length - 1],
+      timestamp: now,
+      isCorrect: input[input.length - 1] === targetText[input.length - 1],
+      latency
+    };
+
     const newStats = { errors, accuracy, totalChars: input.length };
-    setStats(prev => ({ ...prev, ...newStats }));
+    dispatch({ type: 'UPDATE', userInput: input, stats: newStats, keystroke });
 
     if (input.length === targetText.length) {
-      // Pass the current stats to finishGame to avoid stale state or weird side effects
-      const elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+      const st = startTime || now;
+      const elapsedSec = Math.floor((now - st) / 1000);
       const finalWpm = elapsedSec > 0 ? Math.round((input.length / 5) / (elapsedSec / 60)) : 0;
       finishGame({ ...newStats, wpm: finalWpm });
     }
-  }, [status, targetText, soundEnabled, startTime]);
+  }, [status, targetText, soundEnabled, startTime, difficulty]);
 
   const handleDrillStart = useCallback(() => {
     if (status === GameStatus.IDLE) {
-      setStatus(GameStatus.PLAYING);
-      setStartTime(Date.now());
+      dispatch({ type: 'START', startTime: Date.now() });
       logAppEvent('drill_start', { difficulty: drillDifficulty });
     }
   }, [status, drillDifficulty]);
 
   const finishGame = useCallback((finalStats?: Partial<GameStats>) => {
-    setStatus(GameStatus.FINISHED);
+    dispatch({ type: 'FINISH', status: GameStatus.FINISHED, finalStats });
     if (timerRef.current) clearInterval(timerRef.current);
 
-    if (mode === GameMode.PRACTICE && startTime) {
-      const now = Date.now();
-      const duration = Math.floor((now - startTime) / 1000);
+    if (mode === GameMode.PRACTICE) {
+      // Calculate Analytics for Heatmap
+      const analytics: KeyAnalytics = {};
+      session.keystrokes.forEach(ks => {
+        const char = ks.key.toLowerCase();
+        if (!analytics[char]) {
+          analytics[char] = { total: 0, errors: 0, avgLatency: 0 };
+        }
+        analytics[char].total++;
+        if (!ks.isCorrect) analytics[char].errors++;
+        // Moving average for latency
+        analytics[char].avgLatency = (analytics[char].avgLatency * (analytics[char].total - 1) + ks.latency) / analytics[char].total;
+      });
 
-      // Trigger confetti
       try {
         confetti({
           particleCount: 150,
@@ -330,34 +351,28 @@ const App: React.FC = () => {
           colors: ['#3B82F6', '#BC13FE', '#22c55e', '#ffffff'],
           zIndex: 100
         });
-      } catch (e) { console.error('Confetti error:', e); }
+      } catch (e) { console.error(e); }
 
-      if (finalStats) {
-        setStats(prev => ({ ...prev, ...finalStats }));
-        if (finalStats.totalChars !== undefined && finalStats.totalChars > 10) {
-          logAppEvent('practice_finish', {
-            difficulty,
-            wpm: finalStats.wpm,
-            accuracy: finalStats.accuracy,
-            duration
-          });
-          savePracticeSession({
-            timestamp: now,
-            difficulty,
-            wpm: finalStats.wpm ?? 0,
-            accuracy: finalStats.accuracy ?? 100,
-            duration: duration
-          });
-        }
+      if (finalStats && (finalStats.totalChars ?? stats.totalChars) > 10) {
+        const now = Date.now();
+        const dur = startTime ? Math.floor((now - startTime) / 1000) : 0;
+        logAppEvent('practice_finish', { difficulty, wpm: finalStats.wpm, accuracy: finalStats.accuracy, duration: dur });
+        savePracticeSession({
+          timestamp: now,
+          difficulty,
+          wpm: finalStats.wpm ?? 0,
+          accuracy: finalStats.accuracy ?? 100,
+          duration: dur,
+          analytics // Save analytics
+        });
       }
-    } else if (mode === GameMode.DRILL) {
+    } else {
       logAppEvent('drill_finish', { difficulty: drillDifficulty });
     }
-  }, [mode, startTime, difficulty, drillDifficulty, savePracticeSession]);
+  }, [mode, startTime, difficulty, drillDifficulty, savePracticeSession, stats.totalChars, session.keystrokes]);
 
   return (
     <div className="min-h-screen bg-dark-bg text-slate-200 flex flex-col items-center p-4 selection:bg-neon-blue/30 selection:text-white overflow-y-auto">
-
       <Header
         mode={mode} setMode={setMode}
         soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}

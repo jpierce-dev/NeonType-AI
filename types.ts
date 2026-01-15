@@ -32,6 +32,21 @@ export interface GameStats {
   totalChars: number;
 }
 
+export interface KeystrokeData {
+  key: string;
+  timestamp: number;
+  isCorrect: boolean;
+  latency: number; // ms since last key
+}
+
+export interface KeyAnalytics {
+  [key: string]: {
+    total: number;
+    errors: number;
+    avgLatency: number;
+  };
+}
+
 export interface CharacterStatus {
   char: string;
   status: 'correct' | 'incorrect' | 'pending' | 'current';
@@ -51,4 +66,5 @@ export interface PracticeHistoryItem {
   wpm: number;
   accuracy: number;
   duration: number;
+  analytics?: KeyAnalytics;
 }
