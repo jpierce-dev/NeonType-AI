@@ -129,6 +129,12 @@ const App: React.FC = () => {
 
   // Drill Configuration
   const [drillDifficulty, setDrillDifficulty] = useState<DrillDifficulty>(DrillDifficulty.HOME_ROW);
+  // Dynamic Title for SEO
+  useEffect(() => {
+    const modeName = mode === GameMode.PRACTICE ? 'Practice' : 'Drill';
+    document.title = `${modeName} Mode | NeonType AI - Keyboard Typing Trainer`;
+  }, [mode]);
+
   // Session State with Reducer
   interface SessionState {
     status: GameStatus;
