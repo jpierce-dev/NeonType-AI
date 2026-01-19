@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef, memo, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useReducer } from 'react';
 import confetti from 'canvas-confetti';
+import { z } from 'zod';
 import { DrillHistoryItem, PracticeHistoryItem, Difficulty, GameStatus, GameStats, GameMode, DrillDifficulty, KeystrokeData, KeyAnalytics } from './types';
 import { fetchPracticeText } from './services/geminiService';
 import { logAppEvent } from './services/firebase';
@@ -7,108 +8,12 @@ import { StatsBoard } from './components/StatsBoard';
 import { TypingArea } from './components/TypingArea';
 import { DrillArea } from './components/DrillArea';
 import { HistoryModal } from './components/HistoryModal';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { FinishModal } from './components/FinishModal';
 import { playClickSound } from './utils/sound';
-import { RefreshCw, Trophy, Keyboard, Gamepad2, Type, Maximize2, Minimize2, Volume2, VolumeX, History } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
-// --- Header Component ---
-
-const Header = memo(({
-  mode, setMode, soundEnabled, setSoundEnabled, isFullScreen, toggleFullScreen, setIsHistoryOpen, difficulty, setDifficulty, drillDifficulty, setDrillDifficulty, status
-}: any) => (
-  <header className="w-full max-w-7xl p-6 flex flex-col md:flex-row gap-6 justify-between items-center z-20">
-    <div className="flex items-center gap-3">
-      <div className="p-2 bg-gradient-to-br from-neon-blue to-neon-purple rounded-lg shadow-[0_0_15px_rgba(188,19,254,0.4)]">
-        <Keyboard className="text-white w-6 h-6" />
-      </div>
-      <h1 className="text-2xl font-bold font-sans tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-        NeonType<span className="text-neon-blue">.ai</span>
-      </h1>
-    </div>
-
-    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-      <div className="flex items-center gap-4">
-        {/* Mode Switcher */}
-        <div className="bg-dark-surface/80 p-1 rounded-lg border border-white/10 flex">
-          <button
-            onClick={() => setMode(GameMode.PRACTICE)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === GameMode.PRACTICE ? 'bg-neon-blue text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            <Type className="w-4 h-4" /> Practice
-          </button>
-          <button
-            onClick={() => setMode(GameMode.DRILL)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === GameMode.DRILL ? 'bg-neon-purple text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            <Gamepad2 className="w-4 h-4" /> Drill
-          </button>
-        </div>
-
-        {/* Sound Toggle */}
-        <button
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-          title={soundEnabled ? "Mute Sound" : "Enable Sound"}
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </button>
-
-        {/* Fullscreen Button */}
-        <button
-          onClick={toggleFullScreen}
-          className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-          title="Toggle Fullscreen"
-        >
-          {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
-
-        {/* History Button */}
-        <button
-          onClick={() => setIsHistoryOpen(true)}
-          className="p-2.5 rounded-lg border border-white/10 bg-dark-surface/80 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-          title="View History"
-        >
-          <History className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Difficulty Selector */}
-      <div className="flex bg-dark-surface border border-white/10 rounded-lg p-1 overflow-x-auto max-w-[300px] md:max-w-none scrollbar-hide">
-        {mode === GameMode.PRACTICE ? (
-          (Object.keys(Difficulty) as Array<keyof typeof Difficulty>).map((level) => (
-            <button
-              key={level}
-              onClick={() => setDifficulty(Difficulty[level])}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${difficulty === Difficulty[level] ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}
-              disabled={status === GameStatus.PLAYING}
-            >
-              {Difficulty[level]}
-            </button>
-          ))
-        ) : (
-          (Object.keys(DrillDifficulty) as Array<keyof typeof DrillDifficulty>).map((level) => (
-            <button
-              key={level}
-              onClick={() => setDrillDifficulty(DrillDifficulty[level])}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all duration-300 ${drillDifficulty === DrillDifficulty[level] ? 'bg-white text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}
-              disabled={status === GameStatus.PLAYING}
-            >
-              {DrillDifficulty[level]}
-            </button>
-          ))
-        )}
-      </div>
-    </div>
-  </header>
-));
-
-// --- Footer Component ---
-
-const Footer = memo(() => (
-  <footer className="fixed bottom-0 w-full p-4 bg-dark-bg/80 backdrop-blur text-slate-600 text-sm flex justify-center gap-6 z-30 border-t border-white/5">
-    <span>Press TAB to reset</span>
-    <span>Powered by Gemini 3.0</span>
-  </footer>
-));
 
 // --- Main App ---
 
@@ -185,20 +90,53 @@ const App: React.FC = () => {
   const { status, startTime, stats, userInput } = session;
 
   const timerRef = useRef<number | null>(null);
+  const totalCharsRef = useRef(0);
 
   // --- Persistence ---
 
   useEffect(() => {
     logAppEvent('page_view', { page_title: 'Home' });
 
+    // Zod schemas for localStorage validation
+    const DrillHistorySchema = z.array(z.object({
+      timestamp: z.number(),
+      difficulty: z.nativeEnum(DrillDifficulty),
+      score: z.number(),
+      accuracy: z.number(),
+      duration: z.number()
+    }));
+
+    const KeyAnalyticsSchema = z.record(z.string(), z.object({
+      total: z.number(),
+      errors: z.number(),
+      avgLatency: z.number()
+    }));
+
+    const PracticeHistorySchema = z.array(z.object({
+      timestamp: z.number(),
+      difficulty: z.nativeEnum(Difficulty),
+      wpm: z.number(),
+      accuracy: z.number(),
+      duration: z.number(),
+      analytics: KeyAnalyticsSchema.optional()
+    })) as z.ZodType<PracticeHistoryItem[]>;
+
     const savedDrill = localStorage.getItem('drill_history');
     if (savedDrill) {
-      try { setDrillHistory(JSON.parse(savedDrill)); } catch (e) { console.error(e); }
+      try {
+        const parsed = DrillHistorySchema.safeParse(JSON.parse(savedDrill));
+        if (parsed.success) setDrillHistory(parsed.data);
+        else console.warn('Invalid drill history data:', parsed.error);
+      } catch (e) { console.error(e); }
     }
 
     const savedPractice = localStorage.getItem('practice_history');
     if (savedPractice) {
-      try { setPracticeHistory(JSON.parse(savedPractice)); } catch (e) { console.error(e); }
+      try {
+        const parsed = PracticeHistorySchema.safeParse(JSON.parse(savedPractice));
+        if (parsed.success) setPracticeHistory(parsed.data);
+        else console.warn('Invalid practice history data:', parsed.error);
+      } catch (e) { console.error(e); }
     }
   }, []);
 
@@ -269,17 +207,22 @@ const App: React.FC = () => {
 
   // --- Timer ---
 
+  // Sync totalChars to ref for timer access without causing useEffect re-runs
+  useEffect(() => {
+    totalCharsRef.current = stats.totalChars;
+  }, [stats.totalChars]);
+
   useEffect(() => {
     if (status === GameStatus.PLAYING && startTime) {
       timerRef.current = window.setInterval(() => {
         const now = Date.now();
         const elapsedSec = Math.floor((now - startTime) / 1000);
-        const wpm = elapsedSec > 0 ? Math.round((stats.totalChars / 5) / (elapsedSec / 60)) : 0;
+        const wpm = elapsedSec > 0 ? Math.round((totalCharsRef.current / 5) / (elapsedSec / 60)) : 0;
         dispatch({ type: 'SET_TIME', timeElapsed: elapsedSec, wpm });
       }, 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [status, startTime, stats.totalChars]);
+  }, [status, startTime]);
 
   // --- Input Handlers ---
 
@@ -432,30 +375,7 @@ const App: React.FC = () => {
       <Footer />
 
       {status === GameStatus.FINISHED && mode === GameMode.PRACTICE && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-[#0f1123] border border-white/10 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-blue via-neon-purple to-neon-red"></div>
-            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-            <h2 className="text-3xl font-bold text-white mb-2">Session Complete</h2>
-            <p className="text-slate-400 mb-8">Great job! Here is how you performed.</p>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-3xl font-bold text-neon-blue font-mono">{stats.wpm}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">WPM</div>
-              </div>
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-3xl font-bold text-neon-green font-mono">{stats.accuracy}%</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Accuracy</div>
-              </div>
-            </div>
-            <button
-              onClick={initGame}
-              className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-            >
-              Play Again
-            </button>
-          </div>
-        </div>
+        <FinishModal stats={stats} onPlayAgain={initGame} />
       )}
 
       <HistoryModal
