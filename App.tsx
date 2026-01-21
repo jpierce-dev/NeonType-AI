@@ -181,14 +181,16 @@ const App: React.FC = () => {
   // --- Global Handlers ---
 
   useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Shift + Tab or Escape for reset
+      if ((e.key === 'Tab' && e.shiftKey) || e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         initGame();
       }
     };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [initGame]);
 
   useEffect(() => {

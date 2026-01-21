@@ -67,7 +67,8 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
           difficulty,
           score,
           accuracy: total > 0 ? Math.round((score / total) * 100) : 0,
-          duration: timeRef.current
+          duration: timeRef.current,
+          cpm: timeRef.current > 0 ? Math.round((score / timeRef.current) * 60) : 0
         };
         onSessionComplete(newItem);
       }
@@ -96,8 +97,8 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
     }
 
     const key = e.key;
-    // Ignore modifier keys
-    if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(key)) return;
+    // Ignore modifier and control keys
+    if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape'].includes(key)) return;
 
     if (soundEnabled) {
       playClickSound();
@@ -122,6 +123,7 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
   };
 
   const accuracy = total > 0 ? Math.round((score / total) * 100) : 100;
+  const cpm = timeElapsed > 0 ? Math.round((score / timeElapsed) * 60) : 0;
 
   return (
     <div className="w-full flex flex-col items-center gap-8" onClick={() => inputRef.current?.focus()}>
@@ -140,7 +142,11 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
       {/* Drill HUD */}
       <div className="flex gap-8 md:gap-16">
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Crosshair className="w-3 h-3" /> Score</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Target className="w-3 h-3 text-neon-blue" /> CPM</span>
+          <span className="text-2xl font-mono text-white font-bold">{cpm}</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Crosshair className="w-3 h-3 text-neon-purple" /> Score</span>
           <span className="text-2xl font-mono text-white font-bold">{score}</span>
         </div>
         <div className="flex flex-col items-center">

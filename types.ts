@@ -58,6 +58,7 @@ export interface DrillHistoryItem {
   score: number;
   accuracy: number;
   duration: number;
+  cpm?: number;
 }
 
 export interface PracticeHistoryItem {

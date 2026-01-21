@@ -167,6 +167,14 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({
         [drillHistory]
     );
 
+    const cpmData = useMemo(() =>
+        (Array.isArray(drillHistory) ? drillHistory : [])
+            .filter(h => h && typeof h === 'object' && typeof (h as DrillHistoryItem).cpm === 'number')
+            .map(h => (h as DrillHistoryItem).cpm as number)
+            .reverse(),
+        [drillHistory]
+    );
+
     const accData = useMemo(() =>
         history
             .filter(h => h && typeof h === 'object' && typeof h.accuracy === 'number')
@@ -214,10 +222,13 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({
                             {/* Trends Summary */}
                             <div className="flex flex-col md:flex-row gap-4">
                                 <TrendChart
-                                    data={isDrill ? scoreData : wpmData}
+                                    data={isDrill ? cpmData : wpmData}
                                     color={isDrill ? "#BC13FE" : "#3B82F6"}
-                                    label={isDrill ? "Score" : "WPM"}
+                                    label={isDrill ? "CPM" : "WPM"}
                                 />
+                                {isDrill && scoreData.length > 0 && (
+                                    <TrendChart data={scoreData} color="#FACC15" label="Score" />
+                                )}
                                 <TrendChart data={accData} color="#22c55e" label="Accuracy" />
                             </div>
 
@@ -253,8 +264,10 @@ export const HistoryModal: React.FC<HistoryModalProps> = memo(({
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-end">
-                                                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">Score</span>
-                                                        <span className="text-xl font-mono font-bold text-white">{(item as DrillHistoryItem).score}</span>
+                                                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">CPM / Score</span>
+                                                        <span className="text-xl font-mono font-bold text-white">
+                                                            {(item as DrillHistoryItem).cpm ?? '0'} <span className="text-xs text-slate-500 font-normal">/ {(item as DrillHistoryItem).score}</span>
+                                                        </span>
                                                     </div>
                                                 )}
 
