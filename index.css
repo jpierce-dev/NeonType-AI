@@ -51,3 +51,24 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Compact layout adjustments for laptops/short viewports */
+@media (max-height: 850px) {
+  .compact-key {
+    height: 2.75rem !important; /* 44px */
+  }
+}
+@media (max-height: 720px) {
+  .compact-key {
+    height: 2.25rem !important; /* 36px */
+  }
+}

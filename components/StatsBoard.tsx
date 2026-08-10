@@ -8,7 +8,7 @@ interface StatsBoardProps {
 
 export const StatsBoard: React.FC<StatsBoardProps> = memo(({ stats }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mb-8">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full max-w-4xl mb-4 md:mb-6">
       <StatCard
         Icon={Timer}
         iconColor="text-neon-blue"
@@ -50,12 +50,12 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = memo(({ Icon, iconColor, label, value, color }) => (
-  <div className={`bg-dark-surface/50 backdrop-blur-md border ${color} rounded-xl p-4 flex flex-col items-center justify-center transition-all hover:bg-dark-surface/80`}>
-    <div className="flex items-center gap-2 mb-2 text-slate-400 text-sm font-medium uppercase tracking-wider">
-      <Icon className={`w-5 h-5 ${iconColor}`} />
+  <div className={`bg-dark-surface/50 backdrop-blur-md border ${color} rounded-xl p-2.5 md:p-3.5 flex flex-col items-center justify-center transition-all hover:bg-dark-surface/80`}>
+    <div className="flex items-center gap-1.5 mb-1 text-slate-400 text-xs font-medium uppercase tracking-wider">
+      <Icon className={`w-4 h-4 ${iconColor}`} />
       <span>{label}</span>
     </div>
-    <div className="text-3xl font-mono font-bold text-white">
+    <div className="text-2xl md:text-3xl font-mono font-bold text-white">
       {value}
     </div>
   </div>

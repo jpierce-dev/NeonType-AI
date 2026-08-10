@@ -323,7 +323,7 @@ const App: React.FC = () => {
   }, [mode, startTime, difficulty, drillDifficulty, savePracticeSession, stats.totalChars, session.keystrokes]);
 
   return (
-    <div className="min-h-screen bg-dark-bg text-slate-200 flex flex-col items-center p-4 selection:bg-neon-blue/30 selection:text-white overflow-y-auto">
+    <div className="min-h-screen bg-dark-bg text-slate-200 flex flex-col items-center px-3 py-2 md:px-6 selection:bg-neon-blue/30 selection:text-white overflow-y-auto">
       <Header
         mode={mode} setMode={setMode}
         soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
@@ -334,11 +334,11 @@ const App: React.FC = () => {
         status={status}
       />
 
-      <main className="w-full max-w-7xl flex flex-col items-center z-10 mt-8 md:mt-16 mb-20 flex-grow">
+      <main className="w-full max-w-7xl flex flex-col items-center z-10 mt-2 md:mt-4 mb-4 md:mb-8 flex-grow">
         {mode === GameMode.PRACTICE ? (
           <>
             <StatsBoard stats={stats} />
-            <div className="w-full flex justify-center relative mt-4">
+            <div className="w-full flex justify-center relative mt-2 md:mt-3">
               <div className="absolute -top-10 -left-10 w-20 h-20 bg-neon-purple/20 rounded-full blur-3xl"></div>
               <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-neon-blue/20 rounded-full blur-3xl"></div>
               <TypingArea
@@ -350,7 +350,7 @@ const App: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="w-full relative mt-4">
+          <div className="w-full relative mt-2 md:mt-3">
             <DrillArea
               difficulty={drillDifficulty}
               status={status}
@@ -363,12 +363,12 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-12 flex gap-4">
+        <div className="mt-4 md:mt-6 flex gap-4">
           <button
             onClick={initGame}
-            className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-semibold transition-all hover:scale-105 active:scale-95 group"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs md:text-sm font-semibold transition-all hover:scale-105 active:scale-95 group"
           >
-            <RefreshCw className={`w-5 h-5 ${status === GameStatus.LOADING ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+            <RefreshCw className={`w-4 h-4 ${status === GameStatus.LOADING ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
             <span>Reset / New Round</span>
           </button>
         </div>
