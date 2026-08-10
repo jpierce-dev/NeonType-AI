@@ -133,7 +133,7 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
 
   return (
     <div
-      className="relative w-full max-w-4xl min-h-[140px] md:min-h-[180px] bg-dark-surface/30 backdrop-blur-sm border border-white/5 rounded-2xl p-4 sm:p-6 cursor-text overflow-hidden group hover:border-white/10 transition-colors"
+      className="relative w-full max-w-4xl min-h-[160px] md:min-h-[200px] bg-dark-surface/30 backdrop-blur-sm border border-white/5 rounded-2xl p-6 md:p-8 cursor-text overflow-hidden group hover:border-white/10 transition-colors"
       onClick={handleContainerClick}
     >
       {/* Hidden Input for handling typing logic specifically */}
@@ -153,7 +153,7 @@ export const TypingArea: React.FC<TypingAreaProps> = ({ targetText, userInput, s
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="font-mono text-xl sm:text-2xl md:text-3xl leading-relaxed break-words outline-none max-h-[160px] sm:max-h-[200px] md:max-h-[240px] overflow-y-auto pr-4 scrollbar-hide"
+        className="font-mono text-2xl md:text-3xl leading-relaxed break-words outline-none max-h-[200px] sm:max-h-[240px] md:max-h-[280px] overflow-y-auto pr-4 scrollbar-hide"
         style={{ whiteSpace: 'pre-wrap' }}
       >
         {status === GameStatus.LOADING ? (

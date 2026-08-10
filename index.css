@@ -64,11 +64,11 @@ body {
 /* Compact layout adjustments for laptops/short viewports */
 @media (max-height: 850px) {
   .compact-key {
-    height: 2.75rem !important; /* 44px */
+    height: 3.25rem !important; /* 52px */
   }
 }
 @media (max-height: 720px) {
   .compact-key {
-    height: 2.25rem !important; /* 36px */
+    height: 2.75rem !important; /* 44px */
   }
 }

@@ -12,7 +12,7 @@ interface KeyProps {
 }
 
 const Key: React.FC<KeyProps> = memo(({ keyObj, isActive, isPressed }) => {
-  let baseStyle = "h-9 sm:h-10 md:h-11 lg:h-12 xl:h-14 compact-key m-0.5 md:m-1 rounded-lg flex items-center justify-center text-xs sm:text-sm md:text-base font-mono transition-all duration-75 border border-white/10 ";
+  let baseStyle = "h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 compact-key m-0.5 md:m-1 rounded-lg flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg font-mono transition-all duration-75 border border-white/10 ";
 
   if (isActive) {
     baseStyle += "bg-neon-blue text-black shadow-[0_0_20px_#00f3ff] scale-95 font-bold border-neon-blue z-10";
@@ -26,7 +26,7 @@ const Key: React.FC<KeyProps> = memo(({ keyObj, isActive, isPressed }) => {
     <div
       className={baseStyle}
       style={{
-        width: `${keyObj.w * 3.2}rem`,
+        width: `${keyObj.w * 3.4}rem`,
         flexGrow: keyObj.w,
         flexShrink: 1,
         minWidth: '0'
@@ -60,7 +60,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = memo(({ activeKey
   const pressed = pressedKey?.toLowerCase();
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-2 md:p-3.5 lg:p-4 bg-dark-bg/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm select-none">
+    <div className="w-full max-w-6xl mx-auto p-2.5 md:p-4 lg:p-6 bg-dark-bg/50 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-sm select-none">
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="flex justify-center w-full">
           {row.map((keyObj, kIndex) => {

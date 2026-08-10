@@ -126,7 +126,7 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
   const cpm = timeElapsed > 0 ? Math.round((score / timeElapsed) * 60) : 0;
 
   return (
-    <div className="w-full flex flex-col items-center gap-3 md:gap-5" onClick={() => inputRef.current?.focus()}>
+    <div className="w-full flex flex-col items-center gap-4 md:gap-6" onClick={() => inputRef.current?.focus()}>
       {/* Hidden input to capture keystrokes globally */}
       <input
         ref={inputRef}
@@ -140,35 +140,35 @@ export const DrillArea: React.FC<DrillAreaProps> = memo(({
       />
 
       {/* Drill HUD */}
-      <div className="flex gap-4 sm:gap-6 md:gap-10">
+      <div className="flex gap-6 sm:gap-8 md:gap-12">
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 flex items-center gap-1"><Target className="w-3 h-3 text-neon-blue" /> CPM</span>
-          <span className="text-xl md:text-2xl font-mono text-white font-bold">{cpm}</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Target className="w-3.5 h-3.5 text-neon-blue" /> CPM</span>
+          <span className="text-2xl font-mono text-white font-bold">{cpm}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 flex items-center gap-1"><Crosshair className="w-3 h-3 text-neon-purple" /> Score</span>
-          <span className="text-xl md:text-2xl font-mono text-white font-bold">{score}</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Crosshair className="w-3.5 h-3.5 text-neon-purple" /> Score</span>
+          <span className="text-2xl font-mono text-white font-bold">{score}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-400" /> Combo</span>
-          <span className={`text-xl md:text-2xl font-mono font-bold ${combo > 5 ? 'text-yellow-400 animate-pulse' : 'text-white'}`}>{combo}x</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Zap className="w-3.5 h-3.5 text-yellow-400" /> Combo</span>
+          <span className={`text-2xl font-mono font-bold ${combo > 5 ? 'text-yellow-400 animate-pulse' : 'text-white'}`}>{combo}x</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 flex items-center gap-1"><Timer className="w-3 h-3 text-neon-blue" /> Time</span>
-          <span className="text-xl md:text-2xl font-mono text-white font-bold">{timeElapsed}s</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Timer className="w-3.5 h-3.5 text-neon-blue" /> Time</span>
+          <span className="text-2xl font-mono text-white font-bold">{timeElapsed}s</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 flex items-center gap-1"><Target className="w-3 h-3 text-neon-green" /> Accuracy</span>
-          <span className="text-xl md:text-2xl font-mono text-white font-bold">{accuracy}%</span>
+          <span className="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-1"><Target className="w-3.5 h-3.5 text-neon-green" /> Accuracy</span>
+          <span className="text-2xl font-mono text-white font-bold">{accuracy}%</span>
         </div>
       </div>
 
       {/* Main Target Display */}
-      <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center">
+      <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 flex items-center justify-center">
         <div className="absolute inset-0 bg-neon-blue/10 rounded-full blur-xl animate-pulse-slow"></div>
         <div className={`
-            relative z-10 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center 
-            bg-dark-surface border-2 rounded-2xl md:rounded-3xl text-4xl md:text-5xl font-mono font-bold text-white shadow-2xl
+            relative z-10 w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center 
+            bg-dark-surface border-2 rounded-2xl md:rounded-3xl text-5xl md:text-6xl font-mono font-bold text-white shadow-2xl
             transition-all duration-100
             ${status === GameStatus.IDLE ? 'border-white/20' : 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.3)]'}
          `}>
